@@ -1,112 +1,23 @@
-
-
-/* Copyright 2022 Google LLC
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
-
 /*
-# [START vpc_serverless_connector_enable_api]
-resource "google_project_service" "vpcaccess_api" {
-  service            = "vpcaccess.googleapis.com"
-  provider           = google-beta
-  disable_on_destroy = false
-}
-# [END vpc_serverless_connector_enable_api]
-
-# [START vpc_serverless_connector]
-# VPC
-resource "google_compute_network" "default" {
-  name                    = "cloudrun-network"
-  provider                = google-beta
-  auto_create_subnetworks = false
-}
-
-# VPC access connector
-resource "google_vpc_access_connector" "connector" {
-  name           = "vpcconn"
-  provider       = google-beta
-  region         = "us-west1"
-  ip_cidr_range  = "10.8.0.0/28"
-  max_throughput = 300
-  network        = google_compute_network.default.name
-  depends_on     = [google_project_service.vpcaccess_api]
-}
-
-# Cloud Router
-resource "google_compute_router" "router" {
-  name     = "router"
-  provider = google-beta
-  region   = "us-west1"
-  network  = google_compute_network.default.id
-}
-
-# NAT configuration
-resource "google_compute_router_nat" "router_nat" {
-  name                               = "nat"
-  provider                           = google-beta
-  region                             = "us-west1"
-  router                             = google_compute_router.router.name
-  source_subnetwork_ip_ranges_to_nat = "ALL_SUBNETWORKS_ALL_IP_RANGES"
-  nat_ip_allocate_option             = "AUTO_ONLY"
-}
-# [END vpc_serverless_connector]
-
-# [START cloudrun_vpc_serverless_connector]
-# Cloud Run service
-resource "google_cloud_run_service" "gcr_service" {
-  name     = "mygcrservice"
-  provider = google-beta
-  location = "us-west1"
-
-  template {
-    spec {
-      containers {
-        image = "gcr.io/gcp-services-369509/renderer"
-        resources {
-          limits = {
-            cpu    = "1000m"
-            memory = "512M"
-          }
-        }
-      }
-      # the service uses this SA to call other Google Cloud APIs
-      # service_account_name = myservice_runtime_sa
-    }
-
-    metadata {
-      annotations = {
-        # Limit scale up to prevent any cost blow outs!
-        "autoscaling.knative.dev/maxScale" = "5"
-        # Use the VPC Connector
-        "run.googleapis.com/vpc-access-connector" = google_vpc_access_connector.connector.name
-        # all egress from the service should go through the VPC Connector
-        "run.googleapis.com/vpc-access-egress" = "all-traffic"
-      }
-    }
-  }
-  autogenerate_revision_name = true
-}
-# [END cloudrun_vpc_serverless_connector]
-
 #=========================================
-#   SQL Connection
+#   Network Connection
 #=========================================
+
+# Data block to read the network and subnetwork properties
+
+data "google_compute_network" "network" {
+  name    = var.network
+  project = var.project_id
+}
+
+data "google_compute_subnetwork" "network" {
+  name    = var.subnetwork
+  project = var.project_id
+  region  = var.region
+}
 
 # Project data
 data "google_project" "project" {
-  project_id = "gcp-services-369509"
 }
 
 # Enable Secret Manager API
@@ -127,10 +38,9 @@ resource "google_project_service" "cloudrun_api" {
   disable_on_destroy = false
 }
 
-
 # Creates SQL instance (~15 minutes to fully spin up)
 resource "google_sql_database_instance" "mysql_instance" {
-  name             = "sqlinstance-555"
+  name             = "mysqlinstance-456"
   region           = "us-central1"
   database_version = "MYSQL_8_0"
   root_password    = "abcABC123!"
@@ -153,8 +63,8 @@ resource "google_sql_database_instance" "mysql_instance" {
 # [START cloudrun_service_cloudsql_dbuser_secret]
 
 # Create dbuser secret
-resource "google_secret_manager_secret" "dbuser1" {
-  secret_id = "dbusersecret1"
+resource "google_secret_manager_secret" "dbuser" {
+  secret_id = "dbusersecret"
   replication {
     automatic = true
   }
@@ -162,16 +72,14 @@ resource "google_secret_manager_secret" "dbuser1" {
 }
 
 # Attaches secret data for dbuser secret
-resource "google_secret_manager_secret_version" "dbuser_data1" {
-  secret      = google_secret_manager_secret.dbuser1.id
-  secret_data = "secret-data1" # Stores secret as a plain txt in state
+resource "google_secret_manager_secret_version" "dbuser_data" {
+  secret      = google_secret_manager_secret.dbuser.id
+  secret_data = "secret-data" # Stores secret as a plain txt in state
 }
 
-
-  
 # Update service account for dbuser secret
-resource "google_secret_manager_secret_iam_member" "secretaccess_compute_dbuser1" {
-  secret_id = google_secret_manager_secret.dbuser1.id
+resource "google_secret_manager_secret_iam_member" "secretaccess_compute_dbuser" {
+  secret_id = google_secret_manager_secret.dbuser.id
   role      = "roles/secretmanager.secretAccessor"
   member    = "serviceAccount:${data.google_project.project.number}-compute@developer.gserviceaccount.com" # Project's compute service account
 }
@@ -182,8 +90,8 @@ resource "google_secret_manager_secret_iam_member" "secretaccess_compute_dbuser1
 # [START cloudrun_service_cloudsql_dbpass_secret]
 
 # Create dbpass secret
-resource "google_secret_manager_secret" "dbpass1" {
-  secret_id = "dbpasssecret1"
+resource "google_secret_manager_secret" "dbpass" {
+  secret_id = "dbpasssecret"
   replication {
     automatic = true
   }
@@ -191,14 +99,14 @@ resource "google_secret_manager_secret" "dbpass1" {
 }
 
 # Attaches secret data for dbpass secret
-resource "google_secret_manager_secret_version" "dbpass_data1" {
-  secret      = google_secret_manager_secret.dbpass1.id
-  secret_data = "secret-data1" # Stores secret as a plain txt in state
+resource "google_secret_manager_secret_version" "dbpass_data" {
+  secret      = google_secret_manager_secret.dbpass.id
+  secret_data = "secret-data" # Stores secret as a plain txt in state
 }
 
 # Update service account for dbpass secret
-resource "google_secret_manager_secret_iam_member" "secretaccess_compute_dbpass1" {
-  secret_id = google_secret_manager_secret.dbpass1.id
+resource "google_secret_manager_secret_iam_member" "secretaccess_compute_dbpass" {
+  secret_id = google_secret_manager_secret.dbpass.id
   role      = "roles/secretmanager.secretAccessor"
   member    = "serviceAccount:${data.google_project.project.number}-compute@developer.gserviceaccount.com" # Project's compute service account
 }
@@ -208,8 +116,8 @@ resource "google_secret_manager_secret_iam_member" "secretaccess_compute_dbpass1
 # [START cloudrun_service_cloudsql_dbname_secret]
 
 # Create dbname secret
-resource "google_secret_manager_secret" "dbname1" {
-  secret_id = "dbnamesecret1"
+resource "google_secret_manager_secret" "dbname" {
+  secret_id = "dbnamesecret"
   replication {
     automatic = true
   }
@@ -217,14 +125,14 @@ resource "google_secret_manager_secret" "dbname1" {
 }
 
 # Attaches secret data for dbname secret
-resource "google_secret_manager_secret_version" "dbname_data1" {
-  secret      = google_secret_manager_secret.dbname1.id
-  secret_data = "secret-data1" # Stores secret as a plain txt in state
+resource "google_secret_manager_secret_version" "dbname_data" {
+  secret      = google_secret_manager_secret.dbname.id
+  secret_data = "secret-data" # Stores secret as a plain txt in state
 }
 
 # Update service account for dbname secret
-resource "google_secret_manager_secret_iam_member" "secretaccess_compute_dbname1" {
-  secret_id = google_secret_manager_secret.dbname1.id
+resource "google_secret_manager_secret_iam_member" "secretaccess_compute_dbname" {
+  secret_id = google_secret_manager_secret.dbname.id
   role      = "roles/secretmanager.secretAccessor"
   member    = "serviceAccount:${data.google_project.project.number}-compute@developer.gserviceaccount.com" # Project's compute service account
 }
@@ -235,6 +143,8 @@ resource "google_secret_manager_secret_iam_member" "secretaccess_compute_dbname1
 #=========================================
 #   Cloud Run
 #=========================================
+
+
 
 resource "null_resource" "git_clone" {
   provisioner "local-exec" {
@@ -248,7 +158,7 @@ resource "null_resource" "git_clone" {
     command = "gcloud builds submit --tag gcr.io/gcp-services-369509/renderer"
   }
 }
-/*
+
 # [START cloudrun_secure_services_backend]
 resource "google_cloud_run_service" "renderer" {
   provider = google-beta
@@ -257,49 +167,7 @@ resource "google_cloud_run_service" "renderer" {
   template {
     spec {
       containers {
-        # Replace with the URL of your Secure Services > Renderer image.
-        #   gcr.io/<PROJECT_ID>/renderer
-        image = "gcr.io/gcp-services-369509/renderer"
-      }
-      service_account_name = google_service_account.renderer.email
-    }
-  }
-  traffic {
-    percent         = 100
-    latest_revision = true
-  }
-
-  depends_on = [
-    null_resource.git_clone
-  ]
-
-}
-# [END cloudrun_secure_services_backend]
-
-*/
-
-/*
-# [START cloudrun_secure_services_backend]
-
-resource "google_cloud_run_service" "renderer" {
-
-  provider = google-beta
-
-  name = "renderer"
-
-  location = "us-central1"
-  template {
-
-    spec {
-
-      containers {
-
-        # Replace with the URL of your Secure Services > Renderer image.
-
-        #   gcr.io/<PROJECT_ID>/renderer
-
-        image = "gcr.io/gcp-services-369509/renderer"
-
+        image = "gcr.io/gcp-services-369509/renderer" # Image to deploy
         # Sets a environment variable for instance connection name
         env {
           name  = "INSTANCE_CONNECTION_NAME"
@@ -307,31 +175,31 @@ resource "google_cloud_run_service" "renderer" {
         }
         # Sets a secret environment variable for database user secret
         env {
-          name = "DB_USER_ONE"
+          name = "DB_USER"
           value_from {
             secret_key_ref {
-              name = google_secret_manager_secret.dbuser1.secret_id # secret name
-              key  = "latest"                                       # secret version number or 'latest'
+              name = google_secret_manager_secret.dbuser.secret_id # secret name
+              key  = "latest"                                      # secret version number or 'latest'
             }
           }
         }
         # Sets a secret environment variable for database password secret
         env {
-          name = "DB_PASS_ONE"
+          name = "DB_PASS"
           value_from {
             secret_key_ref {
-              name = google_secret_manager_secret.dbpass1.secret_id # secret name
-              key  = "latest"                                       # secret version number or 'latest'
+              name = google_secret_manager_secret.dbpass.secret_id # secret name
+              key  = "latest"                                      # secret version number or 'latest'
             }
           }
         }
         # Sets a secret environment variable for database name secret
         env {
-          name = "DB_NAME_ONE"
+          name = "DB_NAME"
           value_from {
             secret_key_ref {
-              name = google_secret_manager_secret.dbname1.secret_id # secret name
-              key  = "latest"                                       # secret version number or 'latest'
+              name = google_secret_manager_secret.dbname.secret_id # secret name
+              key  = "latest"                                      # secret version number or 'latest'
             }
           }
         }
@@ -341,11 +209,11 @@ resource "google_cloud_run_service" "renderer" {
 
     metadata {
       annotations = {
-        "run.googleapis.com/client-name" = "terraform"
+        "autoscaling.knative.dev/maxScale"      = "1" # no clusting
+        "run.googleapis.com/cloudsql-instances" = google_sql_database_instance.mysql_instance.connection_name
       }
     }
   }
-
   autogenerate_revision_name = true
   depends_on                 = [null_resource.git_clone, google_project_service.secretmanager_api, google_project_service.cloudrun_api, google_project_service.sqladmin_api]
 
@@ -354,11 +222,10 @@ resource "google_cloud_run_service" "renderer" {
     latest_revision = true
   }
 }
+
 # [END cloudrun_secure_services_backend]
 
-*/
 
-/*
 resource "null_resource" "editor" {
   provisioner "local-exec" {
     command = "gcloud builds submit --tag gcr.io/gcp-services-369509/editor"
@@ -380,85 +247,37 @@ resource "google_cloud_run_service" "editor" {
           name  = "EDITOR_UPSTREAM_RENDER_URL"
           value = google_cloud_run_service.renderer.status[0].url
         }
-      }
-      service_account_name = google_service_account.editor.email
-    }
-  }
-  traffic {
-    percent         = 100
-    latest_revision = true
-  }
-  depends_on = [
-    null_resource.editor
-  ]
-}
-# [END cloudrun_secure_services_frontend]
-
-*/
-
-/*
-
-# [START cloudrun_secure_services_frontend]
-resource "null_resource" "editor" {
-  provisioner "local-exec" {
-    command = "gcloud builds submit --tag gcr.io/gcp-services-369509/editor"
-  }
-}
-
-resource "google_cloud_run_service" "editor" {
-
-  provider = google-beta
-
-  name = "editor"
-
-  location = "us-central1"
-
-  template {
-
-    spec {
-
-      containers {
-
-        # Replace with the URL of your Secure Services > Editor image.
-
-        #   gcr.io/<PROJECT_ID>/editor
-
-        image = "gcr.io/gcp-services-369509/editor"
-        env {
-          name  = "EDITOR_UPSTREAM_RENDER_URL"
-          value = google_cloud_run_service.renderer.status[0].url
-        }
         env {
           name  = "INSTANCE_CONNECTION_NAME"
           value = google_sql_database_instance.mysql_instance.connection_name
         }
         # Sets a secret environment variable for database user secret
         env {
-          name = "DB_USER_ONE"
+          name = "DB_USER"
           value_from {
             secret_key_ref {
-              name = google_secret_manager_secret.dbuser1.secret_id # secret name
-              key  = "latest"                                       # secret version number or 'latest'
+              name = google_secret_manager_secret.dbuser.secret_id # secret name
+              key  = "latest"                                      # secret version number or 'latest'
             }
           }
         }
         # Sets a secret environment variable for database password secret
         env {
-          name = "DB_PASS_ONE"
+          name = "DB_PASS"
           value_from {
             secret_key_ref {
-              name = google_secret_manager_secret.dbpass1.secret_id # secret name
-              key  = "latest"                                       # secret version number or 'latest'
+              name = google_secret_manager_secret.dbpass.secret_id # secret name
+              key  = "latest"                                      # secret version number or 'latest'
             }
           }
         }
         # Sets a secret environment variable for database name secret
         env {
-          name = "DB_NAME_ONE"
+          name = "DB_NAME"
           value_from {
             secret_key_ref {
-              name = google_secret_manager_secret.dbname1.secret_id # secret name
-              key  = "latest"                                       # secret version number or 'latest'
+              name = google_secret_manager_secret.dbname.secret_id # secret name
+              key  = "latest"                                      # secret version number or 'latest'
             }
           }
         }
@@ -483,9 +302,7 @@ resource "google_cloud_run_service" "editor" {
 }
 
 # [END cloudrun_secure_services_frontend]
-*/
 
-/*
 # [START cloudrun_secure_services_backend_identity]
 resource "google_service_account" "renderer" {
   provider     = google-beta
@@ -531,5 +348,6 @@ resource "google_cloud_run_service_iam_policy" "noauth" {
 
   policy_data = data.google_iam_policy.noauth.policy_data
 }
-# [END cloudrun_secure_services_frontend_access
+# [END cloudrun_secure_services_frontend_access]
+
 */
