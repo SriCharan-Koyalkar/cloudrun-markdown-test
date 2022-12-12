@@ -1,53 +1,87 @@
-
 provider "google-beta" {
-  project = "gcp-services-369509"
-  region  = "us-central1"
+  project = var.project_id
+  region  = var.region
 }
 
-
+# -----------------------------------------------------------------------------------
 # VPC and Subnets
-resource "google_compute_network" "runcloud2" {
-  name                    = "runcloud2"
-  auto_create_subnetworks = true
+# -----------------------------------------------------------------------------------
+
+resource "google_compute_network" "runcloud22" {
+  name                    = var.network    #"runcloud22"
+  auto_create_subnetworks = false
   #region = "us-central1"
 }
 
 resource "google_compute_subnetwork" "mysubnet2" {
-  name          = "mysubnet2"
-  ip_cidr_range = "192.168.0.0/28"
-  region        = "us-central1"
-  network       = google_compute_network.runcloud2.id
+  name          = var.subnetwork        # "mysubnet2"
+  ip_cidr_range = var.ip_cidr_range                     #"10.0.0.0/16"
+  region        = var.region
+  network       = google_compute_network.runcloud22.id
 }
 
 
-resource "google_vpc_access_connector" "my-vpc-connector123" {
-  name   = "myconnector2"
-  region = "us-central1"
+resource "google_compute_subnetwork" "proxy_subnet" {
+  name          = var.proxy_subnet  #"my-proxy"
+  ip_cidr_range =  "10.2.0.0/16"
+  region        = var.region
+  project       = var.project_id  #"mindful-faculty-369309"
+  network       = google_compute_network.runcloud22.id
+  purpose       = "REGIONAL_MANAGED_PROXY"
+  role          = "ACTIVE"
+}
+
+
+resource "google_vpc_access_connector" "my-vpc-connector1234" {
+  name   = var.vpc_connector_name          #"myconnector22"
+  region = var.region
   # e.g. "10.8.0.0/28"
   ip_cidr_range = "10.8.0.0/28"
-  network       = google_compute_network.runcloud2.id
+  network       = google_compute_network.runcloud22.id
   #subnet_name = module.km1-runcloud.subnets.subnet_name
 }
+
 
 resource "google_compute_router" "default" {
   provider = google-beta
   name     = "myrouter2"
-  network  = google_compute_network.runcloud2.id
-  region   = "us-central1"
+  network  = google_compute_network.runcloud22.id
+  region   = var.region
 }
 
 
+/*
 resource "google_compute_address" "default" {
   provider = google-beta
-  name     = google_compute_subnetwork.mysubnet2.name
+  name     = "my-compute-add"
   region   = "us-central1"
 }
+*/
+
+resource "google_compute_address" "default" {
+  name         = "my-internal-address"
+  subnetwork   = google_compute_subnetwork.mysubnet2.id
+  address_type = "INTERNAL"
+  address      = "10.0.42.42"
+  region       = var.region
+}
+
+/*
+resource "google_compute_address" "default" {
+    project =  "mindful-faculty-369309"
+    name    = "defaultcompute-address"   
+    region       = "us-central1"  
+    address_type = "INTERNAL"  
+    purpose      = "SHARED_LOADBALANCER_VIP"   
+    subnetwork   = google_compute_subnetwork.mysubnet2.id
+}
+*/
 
 resource "google_compute_router_nat" "default" {
   provider               = google-beta
   name                   = "mynat2"
   router                 = google_compute_router.default.name
-  region                 = "us-central1"
+  region                 = var.region
   nat_ip_allocate_option = "AUTO_ONLY"
   #nat_ips                = [google_compute_address.default.self_link]
   source_subnetwork_ip_ranges_to_nat = "ALL_SUBNETWORKS_ALL_IP_RANGES"
@@ -63,12 +97,12 @@ resource "google_compute_global_address" "private_ip_address" {
   purpose       = "VPC_PEERING"
   address_type  = "INTERNAL"
   prefix_length = 24
-  network       = google_compute_network.runcloud2.id
+  network       = google_compute_network.runcloud22.id
 }
 
 
 resource "google_service_networking_connection" "default" {
-  network                 = google_compute_network.runcloud2.id
+  network                 = google_compute_network.runcloud22.id
   service                 = "servicenetworking.googleapis.com"
   reserved_peering_ranges = [google_compute_global_address.private_ip_address.name]
 }
@@ -76,7 +110,7 @@ resource "google_service_networking_connection" "default" {
 
 resource "google_compute_network_peering_routes_config" "peering_routes" {
   peering              = google_service_networking_connection.default.peering
-  network              = google_compute_network.runcloud2.name
+  network              = google_compute_network.runcloud22.name
   import_custom_routes = true
   export_custom_routes = true
 }
@@ -84,76 +118,141 @@ resource "google_compute_network_peering_routes_config" "peering_routes" {
 
 
 
+# -----------------------------------------------------------------------------------
 # cloud sql
+# -----------------------------------------------------------------------------------
+
+
 resource "google_sql_database_instance" "new-cloud-sql" {
   provider         = google-beta
-  name             = "postgres-sql12345"
-  database_version = "POSTGRES_11"
+  name             =  var.db_instance_name    #"postgres-sql123456"
+  database_version =  var.database_version   #"POSTGRES_11"
   depends_on       = [google_service_networking_connection.default]
   settings {
-    tier = "db-f1-micro"
+    tier = var.tier        #"db-f1-micro"
     user_labels = {
-      name        = "sql111"
+      name        = var.user_labels         #"sql111"
       environment = "demo"
       tier        = "database"
       type        = "postgres"
     }
     ip_configuration {
       ipv4_enabled    = false
-      private_network = google_compute_network.runcloud2.id
+      private_network = google_compute_network.runcloud22.id
     }
   }
   deletion_protection = false
 }
 
-/*
-resource "google_compute_network_peering_routes_config" "peering_routes" {
-    peering = google_service_networking_connection.default.peering
-    network = google_compute_network.runcloud2.name
-     import_custom_routes = true
-     export_custom_routes = true
-     }
-*/
+
+#====================================================
+# Load Balance
+#===================================================
+# Load Balancing resources
+
+
+resource "google_compute_region_backend_service" "backend-service" {
+  project = var.project_id
+  region = var.region
+  name = var.backend-service
+  protocol = "HTTP"
+  load_balancing_scheme = "INTERNAL_MANAGED"
+
+  backend {
+    group = google_compute_region_network_endpoint_group.cloudrun_neg.id
+    balancing_mode  = "UTILIZATION"
+    capacity_scaler = 1.0
+  }
+}
+
+resource "google_compute_health_check" "health-check" {
+  name = var.health_check   #"health-check"
+  http_health_check {
+    port = var.health_check_port   #80
+  }
+}
+
+resource "google_compute_region_network_endpoint_group" "cloudrun_neg" {
+  name                  = "cloudrun-neg"
+  network_endpoint_type = "SERVERLESS"
+  region                = var.region
+  cloud_run {
+    service = google_cloud_run_service.editor.name
+  }
+}
+
+resource "google_compute_region_url_map" "regionurlmap" {
+  project         = var.project_id
+  name            = "regionurlmap"
+  description     = "Created with Terraform"
+  region          = var.region
+  default_service = google_compute_region_backend_service.backend-service.id
+}
+
+resource "google_compute_region_target_http_proxy" "targethttpproxy" {
+  project = var.project_id
+  region  = var.region
+  name    = "test-proxy"
+  url_map = google_compute_region_url_map.regionurlmap.id
+}
+
+resource "google_compute_forwarding_rule" "forwarding_rule" {
+  name                  = "l7-ilb-forwarding-rule"
+  provider              = google-beta
+  region                = var.region
+  depends_on            = [google_compute_subnetwork.proxy_subnet]
+  ip_protocol           = "TCP"
+  load_balancing_scheme = "INTERNAL_MANAGED"
+  //ip_address            = google_compute_address.default.name
+  // ip_address            = join("", google_compute_address.default.*.id)
+  port_range            = "80"
+  target                = google_compute_region_target_http_proxy.targethttpproxy.id
+  network               = google_compute_network.runcloud22.id
+  subnetwork            = google_compute_subnetwork.mysubnet2.id
+}
+
+
+
 #===========================================
 #  Cloud RUN
 #===========================================
+
 
 resource "null_resource" "git_clone" {
   provisioner "local-exec" {
     command = "cd ../renderer/"
   }
 
-#   provisioner "local-exec" {
-#     command = "cd nodejs-docs-samples/run/markdown-preview/renderer/" 
-#   }
+  #   provisioner "local-exec" {
+  #     command = "cd nodejs-docs-samples/run/markdown-preview/renderer/" 
+  #   }
   provisioner "local-exec" {
-    command = "gcloud builds submit --tag gcr.io/gcp-services-369509/renderer"
+    command = "gcloud builds submit --tag gcr.io/mindful-faculty-369309/renderer"
   }
 }
-
 
 # [START cloudrun_secure_services_backend]
 resource "google_cloud_run_service" "renderer" {
   provider = google-beta
   name     = "renderer"
-  location = "us-central1"
+  location = var.region
   template {
     spec {
       containers {
         # Replace with the URL of your Secure Services > Renderer image.
         #   gcr.io/<PROJECT_ID>/renderer
-        image = "gcr.io/gcp-services-369509/renderer"
+        image = "gcr.io/mindful-faculty-369309/renderer"
         env {
-          name  = "INSTANCE_CONNECTION_NAME"
-          value = google_sql_database_instance.new-cloud-sql.connection_name
+            name  = "INSTANCE_CONNECTION_NAME"
+            value = google_sql_database_instance.new-cloud-sql.connection_name
+            }
         }
-      }
       service_account_name = google_service_account.renderer.email
     }
     metadata {
       annotations = {
         # Use the VPC Connector
-        "run.googleapis.com/vpc-access-connector" = google_vpc_access_connector.my-vpc-connector123.name
+        "run.googleapis.com/vpc-access-connector" = google_vpc_access_connector.my-vpc-connector1234.name
         "run.googleapis.com/cloudsql-instances"   = google_sql_database_instance.new-cloud-sql.connection_name
         # all egress from the service should go through the VPC Connector
         "run.googleapis.com/vpc-access-egress" = "all-traffic"
@@ -173,7 +272,7 @@ resource "google_cloud_run_service" "renderer" {
 
 resource "null_resource" "editor" {
   provisioner "local-exec" {
-    command = "gcloud builds submit --tag gcr.io/gcp-services-369509/editor"
+    command = "gcloud builds submit --tag gcr.io/mindful-faculty-369309/editor"
   }
 }
 
@@ -181,13 +280,22 @@ resource "null_resource" "editor" {
 resource "google_cloud_run_service" "editor" {
   provider = google-beta
   name     = "editor"
-  location = "us-central1"
+ location = var.region
+  metadata {
+      annotations = {
+          "run.googleapis.com/ingress" = "internal"
+      }
+    }
   template {
     spec {
       containers {
         # Replace with the URL of your Secure Services > Editor image.
         #   gcr.io/<PROJECT_ID>/editor
-        image = "gcr.io/gcp-services-369509/editor"
+        image = "gcr.io/mindful-faculty-369309/editor"
+        ports {
+          name = "h2c" 
+          container_port = 8080
+        }
         env {
           name  = "EDITOR_UPSTREAM_RENDER_URL"
           value = resource.google_cloud_run_service.renderer.status[0].url
@@ -198,9 +306,12 @@ resource "google_cloud_run_service" "editor" {
     metadata {
       annotations = {
         # Use the VPC Connector
-        "run.googleapis.com/vpc-access-connector" = resource.google_vpc_access_connector.my-vpc-connector123.name
+        "run.googleapis.com/vpc-access-connector" = resource.google_vpc_access_connector.my-vpc-connector1234.name
         # all egress from the service should go through the VPC Connector
         "run.googleapis.com/vpc-access-egress" = "all-traffic"
+        //"run.googleapis.com/ingress" = "internal"
+       // "run.googleapis.com/ingress"       = "all"
+        //"run.googleapis.com/ingress" = "internal-and-cloud-load-balancing" // variable set to "internal-and-cloud-load-balancing"
       }
     }
   }
@@ -261,6 +372,9 @@ resource "google_cloud_run_service_iam_policy" "noauth" {
 }
 # [END cloudrun_secure_services_frontend_access]
 
+
+
+#===================================================
 output "backend_url" {
   value = google_cloud_run_service.renderer.status[0].url
 }
