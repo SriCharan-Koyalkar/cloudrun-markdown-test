@@ -1,7 +1,7 @@
 steps:
   - name: 'gcr.io/cloud-builders/gcloud'
     dir: 'renderer/'
-    args: ['build', 'submit', '--tag', 'gcr.io/mindful-faculty-369309/renderer']
+    args: ['builds', 'submit', '--tag', 'gcr.io/mindful-faculty-369309/renderer']
 
   # - name: 'hashicorp/terraform:0.13.0'
   #   id : tf_init
