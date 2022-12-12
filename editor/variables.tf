@@ -10,6 +10,7 @@ variable "project_id" {
   default     = "us-central1"
 }
 
+/*
 variable "domain" {
   type    = string
   default = "example.com"
