@@ -16,8 +16,8 @@ resource "google_compute_network" "runcloud123" {
   #region = "us-central1"
 }
 
-resource "google_compute_subnetwork" "mysubnet2" {
-  name          = "mysubnet2"
+resource "google_compute_subnetwork" "mysubnet22" {
+  name          = "mysubnet22"
   project       = var.project_id
   ip_cidr_range = "10.0.0.0/16"
   region        = var.region
@@ -65,7 +65,7 @@ resource "google_compute_address" "default" {
 
 resource "google_compute_address" "default" {
   name         = "my-internal-address"
-  subnetwork   = google_compute_subnetwork.mysubnet2.id
+  subnetwork   = google_compute_subnetwork.mysubnet22.id
   address_type = "INTERNAL"
   address      = "10.0.42.42"
   region       = "us-central1"
@@ -73,12 +73,11 @@ resource "google_compute_address" "default" {
 
 /*
 resource "google_compute_address" "default" {
-    project =  var.project_id
     name    = "defaultcompute-address"   
     region       = "us-central1"  
     address_type = "INTERNAL"  
     purpose      = "SHARED_LOADBALANCER_VIP"   
-    subnetwork   = google_compute_subnetwork.mysubnet2.id
+    subnetwork   = google_compute_subnetwork.mysubnet22.id
 }
 */
 
@@ -221,7 +220,7 @@ resource "google_compute_forwarding_rule" "forwarding_rule" {
   port_range = "80"
   target     = google_compute_region_target_http_proxy.targethttpproxy.id
   network    = google_compute_network.runcloud123.id
-  subnetwork = google_compute_subnetwork.mysubnet2.id
+  subnetwork = google_compute_subnetwork.mysubnet22.id
 }
 
 
