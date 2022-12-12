@@ -1,4 +1,4 @@
-
+/*
 resource "null_resource" "git_clone" {
   provisioner "local-exec" {
     command = "cd ../renderer/"
@@ -122,3 +122,4 @@ resource "google_cloud_run_service_iam_policy" "noauth" {
   policy_data = data.google_iam_policy.noauth.policy_data
 }
 # [END cloudrun_secure_services_frontend_access]
+*/
