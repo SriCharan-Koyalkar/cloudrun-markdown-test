@@ -71,7 +71,7 @@ resource "google_compute_address" "default" {
 
 /*
 resource "google_compute_address" "default" {
-    project =  "mindful-faculty-369309"
+    project =  var.project_id
     name    = "defaultcompute-address"   
     region       = "us-central1"  
     address_type = "INTERNAL"  
@@ -160,7 +160,7 @@ resource "google_compute_network_peering_routes_config" "peering_routes" {
 # Load Balancing resources
 
 resource "google_compute_region_backend_service" "backend-service" {
-  project = "mindful-faculty-369309"
+  project = var.project_id
   region = "us-central1"
   name = "region-service"
   protocol = "HTTP"
@@ -191,7 +191,7 @@ resource "google_compute_region_network_endpoint_group" "cloudrun_neg" {
 }
 
 resource "google_compute_region_url_map" "regionurlmap" {
-  project         = "mindful-faculty-369309"
+  project         = var.project_id
   name            = "regionurlmap"
   description     = "Created with Terraform"
   region          = "us-central1"
@@ -199,7 +199,7 @@ resource "google_compute_region_url_map" "regionurlmap" {
 }
 
 resource "google_compute_region_target_http_proxy" "targethttpproxy" {
-  project = "mindful-faculty-369309"
+  project = var.project_id
   region  = "us-central1"
   name    = "test-proxy"
   url_map = google_compute_region_url_map.regionurlmap.id
@@ -225,18 +225,18 @@ resource "google_compute_forwarding_rule" "forwarding_rule" {
 #  Cloud RUN
 #===========================================
 
-resource "null_resource" "git_clone" {
-  provisioner "local-exec" {
-    command = "cd ../renderer/"
-  }
+# resource "null_resource" "git_clone" {
+#   provisioner "local-exec" {
+#     command = "cd ../renderer/"
+#   }
 
-  #   provisioner "local-exec" {
-  #     command = "cd nodejs-docs-samples/run/markdown-preview/renderer/" 
-  #   }
-  provisioner "local-exec" {
-    command = "gcloud builds submit --tag gcr.io/mindful-faculty-369309/renderer"
-  }
-}
+#   #   provisioner "local-exec" {
+#   #     command = "cd nodejs-docs-samples/run/markdown-preview/renderer/" 
+#   #   }
+#   provisioner "local-exec" {
+#     command = "gcloud builds submit --tag gcr.io/mindful-faculty-369309/renderer"
+#   }
+# }
 
 # [START cloudrun_secure_services_backend]
 resource "google_cloud_run_service" "renderer" {
@@ -271,17 +271,17 @@ resource "google_cloud_run_service" "renderer" {
     latest_revision = true
   }
   depends_on = [
-    null_resource.git_clone, google_vpc_access_connector.my-vpc-connector1234
+    google_vpc_access_connector.my-vpc-connector1234
   ]
 }
 # [END cloudrun_secure_services_backend]
 
 
-resource "null_resource" "editor" {
-  provisioner "local-exec" {
-    command = "gcloud builds submit --tag gcr.io/mindful-faculty-369309/editor"
-  }
-}
+# resource "null_resource" "editor" {
+#   provisioner "local-exec" {
+#     command = "gcloud builds submit --tag gcr.io/mindful-faculty-369309/editor"
+#   }
+# }
 
 # [START cloudrun_secure_services_frontend]
 resource "google_cloud_run_service" "editor" {
@@ -327,7 +327,7 @@ resource "google_cloud_run_service" "editor" {
     latest_revision = true
   }
   depends_on = [
-    null_resource.editor, google_vpc_access_connector.my-vpc-connector1234
+   google_vpc_access_connector.my-vpc-connector1234
   ]
 }
 # [END cloudrun_secure_services_frontend]
