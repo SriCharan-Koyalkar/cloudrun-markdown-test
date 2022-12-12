@@ -1,20 +1,22 @@
 steps:
   - name: 'gcr.io/cloud-builders/gcloud'
+    dir: 'renderer/'
+    args: ['build', 'submit', '--tag', 'gcr.io/mindful-faculty-369309/renderer']
 
-  - name: 'hashicorp/terraform:0.13.0'
-    id : tf_init
-    dir: 'editor/'
-    args: ['init']
+  # - name: 'hashicorp/terraform:0.13.0'
+  #   id : tf_init
+  #   dir: 'editor/'
+  #   args: ['init']
   
-  - name: 'hashicorp/terraform:0.13.0'
-    id: tf_plan
-    dir: 'editor/'
-    args: ['plan']
-    wait_for: ['tf_init']
+  # - name: 'hashicorp/terraform:0.13.0'
+  #   id: tf_plan
+  #   dir: 'editor/'
+  #   args: ['plan']
+  #   wait_for: ['tf_init']
   
-  - name: 'hashicorp/terraform:0.13.0'
-    id: tf_apply
-    dir: 'editor/'
-    args: ['apply', '-auto-approve']
-    wait_for: ['tf_plan']
+  # - name: 'hashicorp/terraform:0.13.0'
+  #   id: tf_apply
+  #   dir: 'editor/'
+  #   args: ['apply', '-auto-approve']
+  #   wait_for: ['tf_plan']
   
