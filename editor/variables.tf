@@ -4,7 +4,7 @@ variable "project_id" {
   type        = string
   default     = "gcp-services-369509"
 }
-  variable "region" {
+variable "region" {
   description = "The location (region or zone) to deploy the Cloud Run services. Note: Be sure to pick a region that supports Cloud Run."
   type        = string
   default     = "us-central1"
