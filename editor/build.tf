@@ -11,6 +11,7 @@ provider "google-beta" {
 
 resource "google_compute_network" "runcloud22" {
   name                    = "runcloud22"
+  project = var.project_id
   auto_create_subnetworks = false
   #region = "us-central1"
 }
@@ -174,6 +175,7 @@ resource "google_compute_region_backend_service" "backend-service" {
 
 resource "google_compute_health_check" "health-check" {
   name = "health-check"
+  project = var.project_id
   http_health_check {
     port = 80
   }
