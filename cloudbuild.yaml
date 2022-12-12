@@ -1,16 +1,16 @@
 steps:
-  - name: 'hashicorp/terraform:0.15'
+  - name: 'hashicorp/terraform:0.13'
     id : tf_init
     dir: 'editor/'
     args: ['init']
   
-  - name: 'hashicorp/terraform:0.15'
+  - name: 'hashicorp/terraform:0.13'
     id: tf_plan
     dir: 'editor/'
     args: ['plan']
     wait_for: ['tf_init']
   
-  - name: 'hashicorp/terraform:0.15'
+  - name: 'hashicorp/terraform:0.13'
     id: tf_apply
     dir: 'editor/'
     args: ['apply', '-auto-approve']
