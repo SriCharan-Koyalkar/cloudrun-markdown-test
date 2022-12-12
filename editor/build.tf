@@ -301,17 +301,17 @@ resource "google_cloud_run_service" "editor" {
           name = "h2c" 
           container_port = 8080
         }
-        env {
-          name  = "EDITOR_UPSTREAM_RENDER_URL"
-          value = resource.google_cloud_run_service.renderer.status[0].url
-        }
+#         env {
+#           name  = "EDITOR_UPSTREAM_RENDER_URL"
+#           value = resource.google_cloud_run_service.renderer.status[0].url
+#         }
       }
       service_account_name = google_service_account.editor.email
     }
     metadata {
       annotations = {
         # Use the VPC Connector
-        "run.googleapis.com/vpc-access-connector" = resource.google_vpc_access_connector.my-vpc-connector1234.name
+#         "run.googleapis.com/vpc-access-connector" = resource.google_vpc_access_connector.my-vpc-connector1234.name
         # all egress from the service should go through the VPC Connector
         "run.googleapis.com/vpc-access-egress" = "all-traffic"
         //"run.googleapis.com/ingress" = "internal"
