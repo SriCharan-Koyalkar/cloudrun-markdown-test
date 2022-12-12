@@ -9,8 +9,8 @@ provider "google-beta" {
 # VPC and Subnets
 # -----------------------------------------------------------------------------------
 
-resource "google_compute_network" "runcloud22" {
-  name                    = "runcloud22"
+resource "google_compute_network" "runcloud123" {
+  name                    = "runcloud123"
   project                 = var.project_id
   auto_create_subnetworks = false
   #region = "us-central1"
@@ -21,7 +21,7 @@ resource "google_compute_subnetwork" "mysubnet2" {
   project       = var.project_id
   ip_cidr_range = "10.0.0.0/16"
   region        = var.region
-  network       = google_compute_network.runcloud22.id
+  network       = google_compute_network.runcloud123.id
 }
 
 
@@ -30,7 +30,7 @@ resource "google_compute_subnetwork" "proxy_subnet" {
   project       = var.project_id
   ip_cidr_range = "10.2.0.0/16"
   region        = "us-central1"
-  network       = google_compute_network.runcloud22.id
+  network       = google_compute_network.runcloud123.id
   purpose       = "REGIONAL_MANAGED_PROXY"
   role          = "ACTIVE"
 }
@@ -42,7 +42,7 @@ resource "google_vpc_access_connector" "my-vpc-connector1234" {
   region  = "us-central1"
   # e.g. "10.8.0.0/28"
   ip_cidr_range = "10.8.0.0/28"
-  network       = google_compute_network.runcloud22.id
+  network       = google_compute_network.runcloud123.id
   #subnet_name = module.km1-runcloud.subnets.subnet_name
 }
 
@@ -50,7 +50,7 @@ resource "google_vpc_access_connector" "my-vpc-connector1234" {
 resource "google_compute_router" "default" {
   provider = google-beta
   name     = "myrouter2"
-  network  = google_compute_network.runcloud22.id
+  network  = google_compute_network.runcloud123.id
   region   = "us-central1"
 }
 
@@ -103,12 +103,12 @@ resource "google_compute_global_address" "private_ip_address" {
   purpose       = "VPC_PEERING"
   address_type  = "INTERNAL"
   prefix_length = 24
-  network       = google_compute_network.runcloud22.id
+  network       = google_compute_network.runcloud123.id
 }
 
 
 resource "google_service_networking_connection" "default" {
-  network                 = google_compute_network.runcloud22.id
+  network                 = google_compute_network.runcloud123.id
   service                 = "servicenetworking.googleapis.com"
   reserved_peering_ranges = [google_compute_global_address.private_ip_address.name]
 }
@@ -116,7 +116,7 @@ resource "google_service_networking_connection" "default" {
 
 resource "google_compute_network_peering_routes_config" "peering_routes" {
   peering              = google_service_networking_connection.default.peering
-  network              = google_compute_network.runcloud22.name
+  network              = google_compute_network.runcloud123.name
   import_custom_routes = true
   export_custom_routes = true
 }
@@ -141,7 +141,7 @@ resource "google_sql_database_instance" "new-cloud-sql" {
     }
     ip_configuration {
       ipv4_enabled    = false
-      private_network = google_compute_network.runcloud22.id
+      private_network = google_compute_network.runcloud123.id
     }
   }
   deletion_protection = false
@@ -151,7 +151,7 @@ resource "google_sql_database_instance" "new-cloud-sql" {
 /*
 resource "google_compute_network_peering_routes_config" "peering_routes" {
     peering = google_service_networking_connection.default.peering
-    network = google_compute_network.runcloud22.name
+    network = google_compute_network.runcloud123.name
      import_custom_routes = true
      export_custom_routes = true
      }
@@ -220,7 +220,7 @@ resource "google_compute_forwarding_rule" "forwarding_rule" {
   // ip_address            = join("", google_compute_address.default.*.id)
   port_range = "80"
   target     = google_compute_region_target_http_proxy.targethttpproxy.id
-  network    = google_compute_network.runcloud22.id
+  network    = google_compute_network.runcloud123.id
   subnetwork = google_compute_subnetwork.mysubnet2.id
 }
 
