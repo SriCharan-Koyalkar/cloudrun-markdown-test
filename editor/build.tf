@@ -269,7 +269,7 @@ resource "google_cloud_run_service" "renderer" {
     latest_revision = true
   }
   depends_on = [
-    null_resource.git_clone
+    null_resource.git_clone, google_vpc_access_connector.my-vpc-connector1234
   ]
 }
 # [END cloudrun_secure_services_backend]
@@ -325,7 +325,7 @@ resource "google_cloud_run_service" "editor" {
     latest_revision = true
   }
   depends_on = [
-    null_resource.editor
+    null_resource.editor, google_vpc_access_connector.my-vpc-connector1234
   ]
 }
 # [END cloudrun_secure_services_frontend]
