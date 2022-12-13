@@ -65,10 +65,11 @@ resource "google_compute_address" "default" {
 
 resource "google_compute_address" "default" {
   name         = "my-internal-address"
+  project = var.project_id
   subnetwork   = google_compute_subnetwork.mysubnet222.id
   address_type = "INTERNAL"
   address      = "10.0.42.42"
-  region       = "us-central1"
+  region       = var.region
 }
 
 /*
@@ -228,18 +229,18 @@ resource "google_compute_forwarding_rule" "forwarding_rule" {
 #  Cloud RUN
 #===========================================
 
-resource "null_resource" "git_clone" {
-  provisioner "local-exec" {
-    command = "cd ../renderer/"
-  }
+# resource "null_resource" "git_clone" {
+#   provisioner "local-exec" {
+#     command = "cd ../renderer/"
+#   }
 
-  #   provisioner "local-exec" {
-  #     command = "cd nodejs-docs-samples/run/markdown-preview/renderer/" 
-  #   }
-  provisioner "local-exec" {
-    command = "gcloud builds submit --tag gcr.io/mindful-faculty-369309/renderer"
-  }
-}
+#   #   provisioner "local-exec" {
+#   #     command = "cd nodejs-docs-samples/run/markdown-preview/renderer/" 
+#   #   }
+#   provisioner "local-exec" {
+#     command = "gcloud builds submit --tag gcr.io/mindful-faculty-369309/renderer"
+#   }
+# }
 
 # [START cloudrun_secure_services_backend]
 resource "google_cloud_run_service" "renderer" {
@@ -280,11 +281,11 @@ resource "google_cloud_run_service" "renderer" {
 # [END cloudrun_secure_services_backend]
 
 
-resource "null_resource" "editor" {
-  provisioner "local-exec" {
-    command = "gcloud builds submit --tag gcr.io/mindful-faculty-369309/editor"
-  }
-}
+# resource "null_resource" "editor" {
+#   provisioner "local-exec" {
+#     command = "gcloud builds submit --tag gcr.io/mindful-faculty-369309/editor"
+#   }
+# }
 
 # [START cloudrun_secure_services_frontend]
 resource "google_cloud_run_service" "editor" {
