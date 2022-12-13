@@ -306,10 +306,10 @@ resource "google_cloud_run_service" "editor" {
           name           = "h2c"
           container_port = 8080
         }
-        #         env {
-        #           name  = "EDITOR_UPSTREAM_RENDER_URL"
-        #           value = resource.google_cloud_run_service.renderer.status[0].url
-        #         }
+                env {
+                  name  = "EDITOR_UPSTREAM_RENDER_URL"
+                  value = resource.google_cloud_run_service.renderer.status[0].url
+                }
       }
       service_account_name = google_service_account.editor.email
     }
