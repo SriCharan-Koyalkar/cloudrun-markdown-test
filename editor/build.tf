@@ -9,19 +9,19 @@ provider "google-beta" {
 # VPC and Subnets
 # -----------------------------------------------------------------------------------
 
-resource "google_compute_network" "runcloud55" {
-  name                    = "runcloud55"
+resource "google_compute_network" "runcloud555" {
+  name                    = "runcloud555"
   project                 = var.project_id
   auto_create_subnetworks = false
   #region = "us-central1"
 }
 
-resource "google_compute_subnetwork" "mysubnet55" {
-  name          = "mysubnet55"
+resource "google_compute_subnetwork" "mysubnet555" {
+  name          = "mysubnet555"
   project       = var.project_id
   ip_cidr_range = "10.0.0.0/16"
   region        = var.region
-  network       = google_compute_network.runcloud55.id
+  network       = google_compute_network.runcloud555.id
 }
 
 
@@ -30,19 +30,19 @@ resource "google_compute_subnetwork" "proxy_subnet" {
   project       = var.project_id
   ip_cidr_range = "10.2.0.0/16"
   region        = "us-central1"
-  network       = google_compute_network.runcloud55.id
+  network       = google_compute_network.runcloud555.id
   purpose       = "REGIONAL_MANAGED_PROXY"
   role          = "ACTIVE"
 }
 
 
-resource "google_vpc_access_connector" "my-vpc-connector55" {
-  name    = "myconnector121"
+resource "google_vpc_access_connector" "my-vpc-connector555" {
+  name    = "myconnector11"
   project = var.project_id
   region  = "us-central1"
   # e.g. "10.8.0.0/28"
   ip_cidr_range = "10.8.0.0/28"
-  network       = google_compute_network.runcloud55.id
+  network       = google_compute_network.runcloud555.id
   #subnet_name = module.km1-runcloud.subnets.subnet_name
 }
 
@@ -50,7 +50,7 @@ resource "google_vpc_access_connector" "my-vpc-connector55" {
 resource "google_compute_router" "default" {
   provider = google-beta
   name     = "myrouter1234"
-  network  = google_compute_network.runcloud55.id
+  network  = google_compute_network.runcloud555.id
   region   = "us-central1"
 }
 
@@ -66,7 +66,7 @@ resource "google_compute_address" "default" {
 resource "google_compute_address" "default" {
   name         = "my-internal-address"
   project = var.project_id
-  subnetwork   = google_compute_subnetwork.mysubnet55.id
+  subnetwork   = google_compute_subnetwork.mysubnet555.id
   address_type = "INTERNAL"
   address      = "10.0.42.42"
   region       = var.region
@@ -78,7 +78,7 @@ resource "google_compute_address" "default" {
     region       = "us-central1"  
     address_type = "INTERNAL"  
     purpose      = "SHARED_LOADBALANCER_VIP"   
-    subnetwork   = google_compute_subnetwork.mysubnet55.id
+    subnetwork   = google_compute_subnetwork.mysubnet555.id
 }
 */
 
@@ -103,20 +103,21 @@ resource "google_compute_global_address" "private_ip_address" {
   purpose       = "VPC_PEERING"
   address_type  = "INTERNAL"
   prefix_length = 24
-  network       = google_compute_network.runcloud55.id
+  network       = google_compute_network.runcloud555.id
 }
 
 
 resource "google_service_networking_connection" "default" {
-  network                 = google_compute_network.runcloud55.id
+  network                 = google_compute_network.runcloud555.id
   service                 = "servicenetworking.googleapis.com"
   reserved_peering_ranges = [google_compute_global_address.private_ip_address.name]
 }
 
 
 resource "google_compute_network_peering_routes_config" "peering_routes" {
+  project       = var.project_id
   peering              = google_service_networking_connection.default.peering
-  network              = google_compute_network.runcloud55.name
+  network              = google_compute_network.runcloud555.name
   import_custom_routes = true
   export_custom_routes = true
 }
@@ -127,7 +128,7 @@ resource "google_compute_network_peering_routes_config" "peering_routes" {
 
 resource "google_sql_database_instance" "new-cloud-sql" {
   provider         = google-beta
-  name             = "postgres-sql4444"
+  name             = "postgres-sql555"
   project          = var.project_id
   database_version = "POSTGRES_11"
   depends_on       = [google_service_networking_connection.default]
@@ -141,7 +142,7 @@ resource "google_sql_database_instance" "new-cloud-sql" {
     }
     ip_configuration {
       ipv4_enabled    = false
-      private_network = google_compute_network.runcloud55.id
+      private_network = google_compute_network.runcloud555.id
     }
   }
   deletion_protection = false
@@ -151,7 +152,7 @@ resource "google_sql_database_instance" "new-cloud-sql" {
 /*
 resource "google_compute_network_peering_routes_config" "peering_routes" {
     peering = google_service_networking_connection.default.peering
-    network = google_compute_network.runcloud55.name
+    network = google_compute_network.runcloud555.name
      import_custom_routes = true
      export_custom_routes = true
      }
@@ -187,6 +188,7 @@ resource "google_compute_health_check" "health-check" {
 
 resource "google_compute_region_network_endpoint_group" "cloudrun_neg" {
   name                  = "cloudrun-neg"
+  project       = var.project_id
   network_endpoint_type = "SERVERLESS"
   region                = var.region
   cloud_run {
@@ -220,8 +222,8 @@ resource "google_compute_forwarding_rule" "forwarding_rule" {
   // ip_address            = join("", google_compute_address.default.*.id)
   port_range = "80"
   target     = google_compute_region_target_http_proxy.targethttpproxy.id
-  network    = google_compute_network.runcloud55.id
-  subnetwork = google_compute_subnetwork.mysubnet55.id
+  network    = google_compute_network.runcloud555.id
+  subnetwork = google_compute_subnetwork.mysubnet555.id
 }
 
 
@@ -263,7 +265,7 @@ resource "google_cloud_run_service" "renderer" {
     metadata {
       annotations = {
         # Use the VPC Connector
-        "run.googleapis.com/vpc-access-connector" = google_vpc_access_connector.my-vpc-connector55.name
+        "run.googleapis.com/vpc-access-connector" = google_vpc_access_connector.my-vpc-connector555.name
         "run.googleapis.com/cloudsql-instances"   = google_sql_database_instance.new-cloud-sql.connection_name
         # all egress from the service should go through the VPC Connector
         "run.googleapis.com/vpc-access-egress" = "all-traffic"
@@ -275,7 +277,7 @@ resource "google_cloud_run_service" "renderer" {
     latest_revision = true
   }
   depends_on = [
-    google_vpc_access_connector.my-vpc-connector55
+    google_vpc_access_connector.my-vpc-connector555
   ]
 }
 # [END cloudrun_secure_services_backend]
@@ -317,7 +319,7 @@ resource "google_cloud_run_service" "editor" {
     metadata {
       annotations = {
         # Use the VPC Connector
-        "run.googleapis.com/vpc-access-connector" = resource.google_vpc_access_connector.my-vpc-connector55.name
+        "run.googleapis.com/vpc-access-connector" = resource.google_vpc_access_connector.my-vpc-connector555.name
         # all egress from the service should go through the VPC Connector
         "run.googleapis.com/vpc-access-egress" = "all-traffic"
         //"run.googleapis.com/ingress" = "internal"
@@ -331,7 +333,7 @@ resource "google_cloud_run_service" "editor" {
     latest_revision = true
   }
   depends_on = [
-    google_vpc_access_connector.my-vpc-connector55
+    google_vpc_access_connector.my-vpc-connector555
   ]
 }
 # [END cloudrun_secure_services_frontend]
