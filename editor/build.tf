@@ -238,7 +238,7 @@ resource "google_compute_forwarding_rule" "forwarding_rule" {
 #   #     command = "cd nodejs-docs-samples/run/markdown-preview/renderer/" 
 #   #   }
 #   provisioner "local-exec" {
-#     command = "gcloud builds submit --tag gcr.io/mindful-faculty-369309/renderer"
+#     command = "gcloud builds submit --tag gcr.io/gcp-services-369509/renderer"
 #   }
 # }
 
@@ -252,7 +252,7 @@ resource "google_cloud_run_service" "renderer" {
       containers {
         # Replace with the URL of your Secure Services > Renderer image.
         #   gcr.io/<PROJECT_ID>/renderer
-        image = "gcr.io/mindful-faculty-369309/renderer"
+        image = "gcr.io/gcp-services-369509/renderer"
         env {
           name  = "INSTANCE_CONNECTION_NAME"
           value = google_sql_database_instance.new-cloud-sql.connection_name
@@ -283,7 +283,7 @@ resource "google_cloud_run_service" "renderer" {
 
 # resource "null_resource" "editor" {
 #   provisioner "local-exec" {
-#     command = "gcloud builds submit --tag gcr.io/mindful-faculty-369309/editor"
+#     command = "gcloud builds submit --tag gcr.io/gcp-services-369509/editor"
 #   }
 # }
 
@@ -302,7 +302,7 @@ resource "google_cloud_run_service" "editor" {
       containers {
         # Replace with the URL of your Secure Services > Editor image.
         #   gcr.io/<PROJECT_ID>/editor
-        image = "gcr.io/mindful-faculty-369309/editor"
+        image = "gcr.io/gcp-services-369509/editor"
         ports {
           name           = "h2c"
           container_port = 8080
