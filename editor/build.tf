@@ -49,7 +49,7 @@ resource "google_vpc_access_connector" "my-vpc-connector555" {
 
 resource "google_compute_router" "default" {
   provider = google-beta
-  name     = "myrouter1234"
+  name     = "myrouter12"
   network  = google_compute_network.runcloud555.id
   region   = "us-central1"
 }
