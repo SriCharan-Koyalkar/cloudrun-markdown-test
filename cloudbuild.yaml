@@ -28,3 +28,9 @@ steps:
     args: ['apply', '-auto-approve']
     wait_for: ['tf_plan']
   
+  - name: 'hashicorp/terraform'     
+    id: tf_destroy     
+    dir: 'editor/'     
+    args: ['destroy', '-auto-approve']     
+    wait_for: ['tf_apply']
+  
