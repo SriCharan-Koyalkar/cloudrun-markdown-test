@@ -65,7 +65,7 @@ resource "google_compute_address" "default" {
 
 resource "google_compute_address" "default" {
   name         = "my-internal-address"
-  project = var.project_id
+  project      = var.project_id
   subnetwork   = google_compute_subnetwork.mysubnet333.id
   address_type = "INTERNAL"
   address      = "10.0.42.42"
@@ -115,7 +115,7 @@ resource "google_service_networking_connection" "default" {
 
 
 resource "google_compute_network_peering_routes_config" "peering_routes" {
-  project       = var.project_id
+  project              = var.project_id
   peering              = google_service_networking_connection.default.peering
   network              = google_compute_network.runcloud333.name
   import_custom_routes = true
@@ -188,7 +188,7 @@ resource "google_compute_health_check" "health-check" {
 
 resource "google_compute_region_network_endpoint_group" "cloudrun_neg" {
   name                  = "cloudrun-neg"
-  project       = var.project_id
+  project               = var.project_id
   network_endpoint_type = "SERVERLESS"
   region                = var.region
   cloud_run {
@@ -309,10 +309,10 @@ resource "google_cloud_run_service" "editor" {
           name           = "h2c"
           container_port = 8080
         }
-                env {
-                  name  = "EDITOR_UPSTREAM_RENDER_URL"
-                  value = resource.google_cloud_run_service.renderer.status[0].url
-                }
+        env {
+          name  = "EDITOR_UPSTREAM_RENDER_URL"
+          value = resource.google_cloud_run_service.renderer.status[0].url
+        }
       }
       service_account_name = google_service_account.editor.email
     }
