@@ -15,14 +15,18 @@ steps:
     dir: 'editor/'
     args: ['init']
     wait_for: ['build_rederer_image', 'build_editor_image']
-timeout: 900s
+    
+  - name: 'ubuntu'
+    id : sleep
+    args: ['sleep', '300']
+    timeout: 300s
+    wait_for: ['tf_init']
 
-steps:
   - name: 'hashicorp/terraform'
     id: tf_plan
     dir: 'editor/'
     args: ['plan']
-    wait_for: ['tf_init']
+    wait_for: ['sleep']
 
   
   # - name: 'hashicorp/terraform'
