@@ -1,45 +1,43 @@
-# steps:
-#   - name: 'gcr.io/cloud-builders/gcloud' 
-#     id: build_rederer_image
-#     dir: 'renderer/'
-#     args: ['builds', 'submit', '--tag', 'gcr.io/gcp-services-369509/renderer']
-    
-#   - name: 'gcr.io/cloud-builders/gcloud'
-#     id: build_editor_image
-#     dir: 'editor/'
-#     args: ['builds', 'submit', '--tag', 'gcr.io/gcp-services-369509/editor']
-
 steps:
+  - name: 'gcr.io/cloud-builders/gcloud' 
+    id: build_rederer_image
+    dir: 'renderer/'
+    args: ['builds', 'submit', '--tag', 'gcr.io/gcp-services-369509/renderer']
+    
+  - name: 'gcr.io/cloud-builders/gcloud'
+    id: build_editor_image
+    dir: 'editor/'
+    args: ['builds', 'submit', '--tag', 'gcr.io/gcp-services-369509/editor']
+
   - name: 'hashicorp/terraform'
     id : tf_init
     dir: 'editor/'
     args: ['init']
-    # wait_for: ['build_rederer_image', 'build_editor_image']
-    
-  - name: 'ubuntu'
-    id : sleep
-    args: ['sleep', '20']
-    timeout: 30s
-    wait_for: ['tf_init']
-
+    wait_for: ['build_rederer_image', 'build_editor_image']
+  
   - name: 'hashicorp/terraform'
     id: tf_plan
     dir: 'editor/'
     args: ['plan']
+    wait_for: ['tf_init']
+
+
+  - name: 'hashicorp/terraform'
+    id: tf_apply
+    dir: 'editor/'
+    args: ['apply', '-auto-approve']
+    wait_for: ['tf_plan']
+
+  - name: 'ubuntu'
+    id : sleep
+    args: ['sleep', '400']
+    timeout: 500s
+    wait_for: ['tf_apply']
+
+  - name: 'hashicorp/terraform'     
+    id: tf_destroy     
+    dir: 'editor/'     
+    args: ['destroy', '-auto-approve'] 
     wait_for: ['sleep']
-
-  
-  # - name: 'hashicorp/terraform'
-  #   id: tf_apply
-  #   dir: 'editor/'
-  #   args: ['apply', '-auto-approve']
-  #   wait_for: ['tf_plan']
-
-  
-  # - name: 'hashicorp/terraform'     
-  #   id: tf_destroy     
-  #   dir: 'editor/'     
-  #   args: ['destroy', '-auto-approve'] 
-  #   wait_for: ['tf_apply']
    
     
