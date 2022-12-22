@@ -39,6 +39,7 @@ resource "google_project_service" "cloudrun_api" {
 }
 
 # Creates SQL instance (~15 minutes to fully spin up)
+
 resource "google_sql_database_instance" "mysql_instance" {
   name             = "mysqlinstance-456"
   region           = "us-central1"

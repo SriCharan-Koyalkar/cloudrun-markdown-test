@@ -1,4 +1,3 @@
-
 provider "google-beta" {
   project = var.project_id
   region  = var.region
@@ -88,10 +87,10 @@ resource "google_compute_router_nat" "default" {
   router                 = google_compute_router.default.name
   region                 = "us-central1"
   nat_ip_allocate_option = "AUTO_ONLY"
-  #nat_ips                = [google_compute_address.default.self_link]
+  #nat_ips                = [google_compute_address.default.self_link]
   source_subnetwork_ip_ranges_to_nat = "ALL_SUBNETWORKS_ALL_IP_RANGES"
   #subnetwork {
-  # name                    = google_compute_subnetwork.default.id
+  # name                    = google_compute_subnetwork.default.id
   #source_ip_ranges_to_nat = ["ALL_IP_RANGES"]
   #}
 }
