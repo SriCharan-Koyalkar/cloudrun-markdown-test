@@ -18,8 +18,8 @@ steps:
     
   - name: 'ubuntu'
     id : sleep
-    args: ['sleep', '30']
-    timeout: 20s
+    args: ['sleep', '20']
+    timeout: 30s
     wait_for: ['tf_init']
 
   - name: 'hashicorp/terraform'
