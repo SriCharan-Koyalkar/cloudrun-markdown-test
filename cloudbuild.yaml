@@ -1,13 +1,13 @@
 steps:
-  # - name: 'gcr.io/cloud-builders/gcloud' 
-  #   id: build_rederer_image
-  #   dir: 'renderer/'
-  #   args: ['builds', 'submit', '--tag', 'gcr.io/gcp-services-369509/renderer']
+  - name: 'gcr.io/cloud-builders/gcloud' 
+    id: build_rederer_image
+    dir: 'renderer/'
+    args: ['builds', 'submit', '--tag', 'gcr.io/gcp-services-369509/renderer']
     
-  # - name: 'gcr.io/cloud-builders/gcloud'
-  #   id: build_editor_image
-  #   dir: 'editor/'
-  #   args: ['builds', 'submit', '--tag', 'gcr.io/gcp-services-369509/editor']
+  - name: 'gcr.io/cloud-builders/gcloud'
+    id: build_editor_image
+    dir: 'editor/'
+    args: ['builds', 'submit', '--tag', 'gcr.io/gcp-services-369509/editor']
 
    
   # - name: 'Authenticate to Google Cloud'
@@ -31,7 +31,7 @@ steps:
     id : tf_init
     dir: 'editor/'
     args: ['init']
-    # wait_for: ['build_rederer_image', 'build_editor_image']
+    wait_for: ['build_rederer_image', 'build_editor_image']
   
   - name: 'hashicorp/terraform'
     id: tf_plan
@@ -54,7 +54,7 @@ steps:
 
   - name: 'ubuntu'
     id : sleep
-    args: ['sleep', '400']
+    args: ['sleep', '200']
     timeout: 500s
     wait_for: ['tf_apply']
 
