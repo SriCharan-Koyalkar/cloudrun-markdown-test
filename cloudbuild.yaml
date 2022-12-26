@@ -1,32 +1,56 @@
 steps:
-  - name: 'gcr.io/cloud-builders/gcloud' 
-    id: build_rederer_image
-    dir: 'renderer/'
-    args: ['builds', 'submit', '--tag', 'gcr.io/gcp-services-369509/renderer']
+  # - name: 'gcr.io/cloud-builders/gcloud' 
+  #   id: build_rederer_image
+  #   dir: 'renderer/'
+  #   args: ['builds', 'submit', '--tag', 'gcr.io/gcp-services-369509/renderer']
     
-  - name: 'gcr.io/cloud-builders/gcloud'
-    id: build_editor_image
-    dir: 'editor/'
-    args: ['builds', 'submit', '--tag', 'gcr.io/gcp-services-369509/editor']
+  # - name: 'gcr.io/cloud-builders/gcloud'
+  #   id: build_editor_image
+  #   dir: 'editor/'
+  #   args: ['builds', 'submit', '--tag', 'gcr.io/gcp-services-369509/editor']
+
+   
+  # - name: 'Authenticate to Google Cloud'
+  #   id: 'auth'
+  #   dir: 'editor/'
+  #    # Add "id-token" with the intended permissions.
+  #   permissions:
+  #     contents: 'read'
+  #     id-token: 'write'
+  #     with:
+  #       registry: 'gcr.io' # or REGION-docker.pkg.dev
+  #       username: 'oauth2accesstoken'
+  #       password: '${{ steps.auth.outputs.access_token }}'
+  #   uses: TOKEN=$(gcloud auth print-identity-token)
+  #   run: |-
+  #     curl -H "Authorization: Bearer $TOKEN" \
+  #     -H 'Content-Type: text/plain' \
+  #       --header "Authorization: Bearer ${{resource.google_cloud_run_service.renderer.status[0].url}}"
 
   - name: 'hashicorp/terraform'
     id : tf_init
     dir: 'editor/'
     args: ['init']
-    wait_for: ['build_rederer_image', 'build_editor_image']
+    # wait_for: ['build_rederer_image', 'build_editor_image']
   
   - name: 'hashicorp/terraform'
     id: tf_plan
     dir: 'editor/'
     args: ['plan']
     wait_for: ['tf_init']
-
+  
+  # - name: 'gcr.io/cloud-builders/gcloud'
+  #   id: token
+  #   dir: 'editor/'
+  #   args: [ 'auth','print-identity-token']
 
   - name: 'hashicorp/terraform'
     id: tf_apply
     dir: 'editor/'
     args: ['apply', '-auto-approve']
     wait_for: ['tf_plan']
+
+  
 
   - name: 'ubuntu'
     id : sleep

@@ -232,6 +232,17 @@ resource "google_compute_forwarding_rule" "forwarding_rule" {
 
 # resource "null_resource" "git_clone" {
 #   provisioner "local-exec" {
+#     command = "TOKEN=$(gcloud auth print-identity-token)"
+#   }
+
+#   provisioner "local-exec" {
+#     command = "curl -H "Authorization: Bearer $TOKEN"/
+#     {resource.google_cloud_run_service.renderer.status[0].url}"
+#   }   
+# }
+
+# resource "null_resource" "git_clone" {
+#   provisioner "local-exec" {
 #     command = "cd ../renderer/"
 #   }
 
@@ -280,6 +291,13 @@ resource "google_cloud_run_service" "renderer" {
   ]
 }
 # [END cloudrun_secure_services_backend]
+
+
+# resource "null_resource" "editor" {
+#   provisioner "local-exec" {
+#     command = "gcloud builds submit --tag gcr.io/gcp-services-369509/editor"
+#   }
+# }
 
 
 # resource "null_resource" "editor" {
